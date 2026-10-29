@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: music
       POSTGRES_DB: music
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - music-db-data:/var/lib/postgresql/data
     healthcheck:

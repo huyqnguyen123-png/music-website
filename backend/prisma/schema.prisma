@@ -1,0 +1,171 @@
+// Prisma schema — see docs/SYSTEM_DESIGN.md for the ER diagram
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  displayName  String
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+
+  playlists     Playlist[]
+  likes         LikedSong[]
+  history       PlayHistory[]
+  refreshTokens RefreshToken[]
+  following     Follow[]       @relation("follower")
+  followers     Follow[]       @relation("following")
+}
+
+// --- Catalog (cached from the iTunes Search API) ---------------------------
+
+model Artist {
+  id        String   @id @default(cuid())
+  itunesId  String   @unique
+  name      String
+  imageUrl  String?
+  createdAt DateTime @default(now())
+
+  albums Album[]
+  songs  Song[]
+
+  @@index([name])
+}
+
+model Album {
+  id          String   @id @default(cuid())
+  itunesId    String   @unique
+  title       String
+  coverUrl    String
+  releaseDate DateTime
+  genre       String?
+  artistId    String
+
+  artist Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  songs  Song[]
+
+  @@index([releaseDate])
+}
+
+model Song {
+  id          String   @id @default(cuid())
+  itunesId    String   @unique
+  title       String
+  durationSec Int
+  previewUrl  String
+  externalUrl String?
+  genre       String?
+  trackNumber Int      @default(1)
+  playCount   Int      @default(0)
+  createdAt   DateTime @default(now())
+  artistId    String
+  albumId     String?
+
+  artist    Artist         @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  album     Album?         @relation(fields: [albumId], references: [id], onDelete: SetNull)
+  playlists PlaylistSong[]
+  likes     LikedSong[]
+  history   PlayHistory[]
+
+  @@index([title])
+}
+
+// --- User content -------------------------------------------------------------
+
+model Playlist {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  coverUrl    String?
+  isCurated   Boolean  @default(false)
+  isPublic    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  ownerId     String
+
+  owner   User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  songs   PlaylistSong[]
+  banners Banner[]
+
+  @@index([ownerId])
+}
+
+model PlaylistSong {
+  playlistId String
+  songId     String
+  position   Int
+  addedAt    DateTime @default(now())
+
+  playlist Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  song     Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+
+  @@id([playlistId, songId])
+}
+
+model LikedSong {
+  userId    String
+  songId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  song Song @relation(fields: [songId], references: [id], onDelete: Cascade)
+
+  @@id([userId, songId])
+}
+
+model PlayHistory {
+  id       String   @id @default(cuid())
+  userId   String
+  songId   String
+  playedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  song Song @relation(fields: [songId], references: [id], onDelete: Cascade)
+
+  @@index([userId, playedAt(sort: Desc)])
+}
+
+model Follow {
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  userId    String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Slides of the hero carousel on the home page
+model Banner {
+  id         String @id @default(cuid())
+  eyebrow    String
+  title      String
+  subtitle   String
+  imageUrl   String
+  sortOrder  Int    @default(0)
+  playlistId String
+
+  playlist Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+}
