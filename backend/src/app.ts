@@ -5,8 +5,12 @@ import helmet from "helmet";
 import morgan from "morgan";
 import { env } from "./config/env.js";
 import { prisma } from "./lib/prisma.js";
+import { requireAuth } from "./middleware/auth.js";
 import { errorHandler, notFoundHandler } from "./middleware/error.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
+import { albumsRouter, artistsRouter, songsRouter } from "./modules/catalog/catalog.routes.js";
+import { homeRouter } from "./modules/home/home.routes.js";
+import { searchRouter } from "./modules/search/search.routes.js";
 
 export function createApp() {
   const app = express();
@@ -24,8 +28,15 @@ export function createApp() {
     res.json({ status: "ok", database: "up", uptime: process.uptime() });
   });
 
-  // Feature routers
+  // Public routes
   app.use("/api/auth", authRouter);
+
+  // Everything below requires a logged-in user
+  app.use("/api/home", requireAuth, homeRouter);
+  app.use("/api/search", requireAuth, searchRouter);
+  app.use("/api/songs", requireAuth, songsRouter);
+  app.use("/api/albums", requireAuth, albumsRouter);
+  app.use("/api/artists", requireAuth, artistsRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
