@@ -6,6 +6,7 @@ import morgan from "morgan";
 import { env } from "./config/env.js";
 import { prisma } from "./lib/prisma.js";
 import { errorHandler, notFoundHandler } from "./middleware/error.js";
+import { authRouter } from "./modules/auth/auth.routes.js";
 
 export function createApp() {
   const app = express();
@@ -23,7 +24,8 @@ export function createApp() {
     res.json({ status: "ok", database: "up", uptime: process.uptime() });
   });
 
-  // Feature routers will be mounted here in the next steps
+  // Feature routers
+  app.use("/api/auth", authRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
