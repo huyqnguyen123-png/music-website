@@ -10,6 +10,8 @@ import { errorHandler, notFoundHandler } from "./middleware/error.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { albumsRouter, artistsRouter, songsRouter } from "./modules/catalog/catalog.routes.js";
 import { homeRouter } from "./modules/home/home.routes.js";
+import { meRouter } from "./modules/me/me.routes.js";
+import { playlistsRouter } from "./modules/playlists/playlists.routes.js";
 import { searchRouter } from "./modules/search/search.routes.js";
 
 export function createApp() {
@@ -37,6 +39,8 @@ export function createApp() {
   app.use("/api/songs", requireAuth, songsRouter);
   app.use("/api/albums", requireAuth, albumsRouter);
   app.use("/api/artists", requireAuth, artistsRouter);
+  app.use("/api/playlists", requireAuth, playlistsRouter);
+  app.use("/api/me", requireAuth, meRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
